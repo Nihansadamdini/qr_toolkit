@@ -1,0 +1,170 @@
+import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+enum QrType { text, url, wifi }
+
+class GenerateScreen extends StatefulWidget {
+  const GenerateScreen({super.key});
+
+  @override
+  State<GenerateScreen> createState() => _GenerateScreenState();
+}
+
+class _GenerateScreenState extends State<GenerateScreen> {
+  QrType _type = QrType.text;
+  final _textCtrl = TextEditingController();
+  final _ssidCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  String _security = 'WPA';
+  bool _hidePass = true;
+  String? _qrData;
+
+  @override
+  void dispose() {
+    _textCtrl.dispose();
+    _ssidCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
+
+  // WiFi QR format eke special characters escape karanna one
+  String _escape(String v) => v.replaceAllMapped(
+      RegExp(r'([\\;,:"])'), (m) => '\\${m[1]}');
+
+  void _generate() {
+    String? data;
+
+    switch (_type) {
+      case QrType.text:
+        final t = _textCtrl.text.trim();
+        if (t.isNotEmpty) data = t;
+        break;
+      case QrType.url:
+        var u = _textCtrl.text.trim();
+        if (u.isNotEmpty) {
+          if (!u.startsWith('http://') && !u.startsWith('https://')) {
+            u = 'https://$u';
+          }
+          data = u;
+        }
+        break;
+      case QrType.wifi:
+        final ssid = _ssidCtrl.text.trim();
+        if (ssid.isNotEmpty) {
+          if (_security == 'nopass') {
+            data = 'WIFI:T:nopass;S:${_escape(ssid)};;';
+          } else {
+            data =
+            'WIFI:T:$_security;S:${_escape(ssid)};P:${_escape(_passCtrl.text)};;';
+          }
+        }
+        break;
+    }
+
+    if (data == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Details tika dapan')),
+      );
+      return;
+    }
+    setState(() => _qrData = data);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        SegmentedButton<QrType>(
+          segments: const [
+            ButtonSegment(
+                value: QrType.text, label: Text('Text'), icon: Icon(Icons.notes)),
+            ButtonSegment(
+                value: QrType.url, label: Text('URL'), icon: Icon(Icons.link)),
+            ButtonSegment(
+                value: QrType.wifi, label: Text('WiFi'), icon: Icon(Icons.wifi)),
+          ],
+          selected: {_type},
+          onSelectionChanged: (s) => setState(() {
+            _type = s.first;
+            _qrData = null;
+          }),
+        ),
+        const SizedBox(height: 16),
+        if (_type != QrType.wifi)
+          TextField(
+            controller: _textCtrl,
+            maxLines: _type == QrType.text ? 3 : 1,
+            keyboardType:
+            _type == QrType.url ? TextInputType.url : TextInputType.text,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: _type == QrType.url ? 'Website URL' : 'Text',
+            ),
+          )
+        else ...[
+          TextField(
+            controller: _ssidCtrl,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'WiFi name (SSID)',
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _security,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Security',
+            ),
+            items: const [
+              DropdownMenuItem(value: 'WPA', child: Text('WPA/WPA2')),
+              DropdownMenuItem(value: 'WEP', child: Text('WEP')),
+              DropdownMenuItem(value: 'nopass', child: Text('No password')),
+            ],
+            onChanged: (v) => setState(() => _security = v!),
+          ),
+          if (_security != 'nopass') ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _passCtrl,
+              obscureText: _hidePass,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'Password',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                      _hidePass ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _hidePass = !_hidePass),
+                ),
+              ),
+            ),
+          ],
+        ],
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: _generate,
+          icon: const Icon(Icons.qr_code_2),
+          label: const Text('Generate QR'),
+        ),
+        if (_qrData != null) ...[
+          const SizedBox(height: 24),
+          Center(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: QrImageView(
+                  data: _qrData!,
+                  size: 240,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SelectableText(_qrData!, textAlign: TextAlign.center),
+        ],
+      ],
+    );
+  }
+}
