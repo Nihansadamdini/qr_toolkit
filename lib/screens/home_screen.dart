@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'generate_screen.dart';
+import 'scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,20 +12,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
 
-  // Scan & History placeholders - Day 2 / Day 3 wala replace karanawa
-  final _pages = const [
-    GenerateScreen(),
-    Center(child: Text('Scan - Day 2')),
-    Center(child: Text('History - Day 3')),
-  ];
-
   static const _titles = ['Generate', 'Scan', 'History'];
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      const GenerateScreen(),
+      ScanScreen(active: _index == 1),
+      const Center(child: Text('History - Day 3')),
+    ];
+
     return Scaffold(
       appBar: AppBar(title: Text(_titles[_index])),
-      body: IndexedStack(index: _index, children: _pages),
+      body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
