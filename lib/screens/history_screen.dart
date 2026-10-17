@@ -30,7 +30,7 @@ class HistoryScreen extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('History okkoma delete karanna da?'),
+        title: const Text('DID YOU DELETE ALL?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),

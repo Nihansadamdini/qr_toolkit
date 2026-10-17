@@ -73,7 +73,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
 
     if (data == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Details tika dapan')),
+        const SnackBar(content: Text('first include details')),
       );
       return;
     }
@@ -99,7 +99,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Share wenne na: $e')),
+        SnackBar(content: Text('SHARE*: $e')),
       );
     }
   }

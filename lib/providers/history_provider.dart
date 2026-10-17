@@ -12,7 +12,7 @@ class HistoryProvider extends ChangeNotifier {
   }
 
   Future<void> add(String content, String source) async {
-    // Ekama QR eka ekapara wadi parak save wenne nae
+    // more time (QR)
     if (_items.isNotEmpty &&
         _items.first.content == content &&
         _items.first.source == source) {
