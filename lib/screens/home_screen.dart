@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'generate_screen.dart';
 import 'scan_screen.dart';
+import 'history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final pages = [
       const GenerateScreen(),
       ScanScreen(active: _index == 1),
-      const Center(child: Text('History - Day 3')),
+      const HistoryScreen(),
     ];
 
     return Scaffold(

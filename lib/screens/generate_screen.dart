@@ -1,5 +1,14 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../providers/history_provider.dart';
 
 enum QrType { text, url, wifi }
 
@@ -15,6 +24,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
   final _textCtrl = TextEditingController();
   final _ssidCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _qrKey = GlobalKey();
   String _security = 'WPA';
   bool _hidePass = true;
   String? _qrData;
@@ -28,8 +38,8 @@ class _GenerateScreenState extends State<GenerateScreen> {
   }
 
   // WiFi QR format eke special characters escape karanna one
-  String _escape(String v) => v.replaceAllMapped(
-      RegExp(r'([\\;,:"])'), (m) => '\\${m[1]}');
+  String _escape(String v) =>
+      v.replaceAllMapped(RegExp(r'([\\;,:"])'), (m) => '\\${m[1]}');
 
   void _generate() {
     String? data;
@@ -68,6 +78,30 @@ class _GenerateScreenState extends State<GenerateScreen> {
       return;
     }
     setState(() => _qrData = data);
+    context.read<HistoryProvider>().add(data, 'generated');
+  }
+
+  Future<void> _share() async {
+    final data = _qrData;
+    if (data == null) return;
+    try {
+      final boundary =
+      _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 3);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      final dir = await getTemporaryDirectory();
+      final file = File(
+          '${dir.path}/qr_${DateTime.now().millisecondsSinceEpoch}.png');
+      await file.writeAsBytes(bytes!.buffer.asUint8List());
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: data),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Share wenne na: $e')),
+      );
+    }
   }
 
   @override
@@ -78,11 +112,15 @@ class _GenerateScreenState extends State<GenerateScreen> {
         SegmentedButton<QrType>(
           segments: const [
             ButtonSegment(
-                value: QrType.text, label: Text('Text'), icon: Icon(Icons.notes)),
+                value: QrType.text,
+                label: Text('Text'),
+                icon: Icon(Icons.notes)),
             ButtonSegment(
                 value: QrType.url, label: Text('URL'), icon: Icon(Icons.link)),
             ButtonSegment(
-                value: QrType.wifi, label: Text('WiFi'), icon: Icon(Icons.wifi)),
+                value: QrType.wifi,
+                label: Text('WiFi'),
+                icon: Icon(Icons.wifi)),
           ],
           selected: {_type},
           onSelectionChanged: (s) => setState(() {
@@ -150,8 +188,10 @@ class _GenerateScreenState extends State<GenerateScreen> {
         if (_qrData != null) ...[
           const SizedBox(height: 24),
           Center(
-            child: Card(
-              child: Padding(
+            child: RepaintBoundary(
+              key: _qrKey,
+              child: Container(
+                color: Colors.white,
                 padding: const EdgeInsets.all(16),
                 child: QrImageView(
                   data: _qrData!,
@@ -163,6 +203,14 @@ class _GenerateScreenState extends State<GenerateScreen> {
           ),
           const SizedBox(height: 12),
           SelectableText(_qrData!, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          Center(
+            child: OutlinedButton.icon(
+              onPressed: _share,
+              icon: const Icon(Icons.share),
+              label: const Text('Share QR'),
+            ),
+          ),
         ],
       ],
     );

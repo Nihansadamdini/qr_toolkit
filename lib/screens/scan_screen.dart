@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import '../providers/history_provider.dart';
 
 class ScanScreen extends StatefulWidget {
   final bool active;
@@ -53,6 +55,7 @@ class _ScanScreenState extends State<ScanScreen> {
     if (_busy || capture.barcodes.isEmpty) return;
     final value = capture.barcodes.first.rawValue;
     if (value == null || value.isEmpty) return;
+    context.read<HistoryProvider>().add(value, 'scanned');
 
     _busy = true;
     await _controller.stop();
